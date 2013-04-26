@@ -36,46 +36,46 @@ randnums:	.word 3859,-4698,2684,3580,-107,4685,2850,-2449,-850,-1513,-2140,105,2
 main:
 
 	# (your code here)
-	la $a0, randnums # grab array starting memory address 
+	la $a0, randnums        # grab array starting memory address 
 	
-	la $t1, arrLen	# grab the array length from memory
+	la $t1, arrLen          # grab the array length from memory
 	lw $a1, 0($t1)
 	
-	#addi $a1, $zero, 20 # load the first 20 elements for testing
+	#addi $a1, $zero, 20    # load the first 20 elements for testing
 	
-	addi $sp, $sp, -4 # shift stack register and push 
-	sw $ra, 0($sp)	  # $ra onto it
+	addi $sp, $sp, -4       # shift stack register and push 
+	sw $ra, 0($sp)          # $ra onto it
 
-	jal importList # import the list from the given array
+	jal importList          # import the list from the given array
 
-	addu $s7, $v0, $0 #save linked list head
+	addu $s7, $v0, $0       #save linked list head
 	
-	la $a0, printIntro # print out preamble to printList
+	la $a0, printIntro      # print out preamble to printList
 	addiu $v0, $zero, 4
 	syscall 
 
-	addu $a0, $s7, $0 # restore $a0 to linked list header
-			  # before calling printList
+	addu $a0, $s7, $0       # restore $a0 to linked list header
+                            # before calling printList
 
 	jal printList
 
-	addu $a0, $s7, $0 # no guarantees printList didn't affect
-			  # $a0, so reload from saved point
+	addu $a0, $s7, $0       # no guarantees printList didn't affect
+                            # $a0, so reload from saved point
 	jal mergeSort
 	
-	addu $s7, $v0, $0 #save the new linked list head 
+	addu $s7, $v0, $0       #save the new linked list head 
 	
-	la $a0, printSorted # print out preamble to sorted printList
+	la $a0, printSorted     # print out preamble to sorted printList
 	addiu $v0, $zero, 4
 	syscall 
 
-	addu $a0, $s7, $0 # restore $a0 to linked list header
-			  # before calling printList
+	addu $a0, $s7, $0       # restore $a0 to linked list header
+                            # before calling printList
 
 	jal printList
 	
-	lw $ra, 0($sp)	  # pop the stack to restore $ra 
-	addi $sp, $sp, 4  # increment stack pointer to release memory for reuse
+	lw $ra, 0($sp)          # pop the stack to restore $ra 
+	addi $sp, $sp, 4        # increment stack pointer to release memory for reuse
 	
 	# return to caller
 	jr 	$ra
@@ -169,26 +169,26 @@ printList:
 	# Prints the data in list from head to tail
 	# $a0 contains head address of list
 
-	addu $t0, $a0, $zero 	# since $a0 is used for syscalls, 
-				# move pointer to temp register
+	addu $t0, $a0, $zero        # since $a0 is used for syscalls, 
+                                # move pointer to temp register
 
 printloop:
 
-	beq $t0, $zero, printDone  # jump out once end of list found
-	lw $t1, 4($t0)		   # grab next pointer and store in $t1
-	lw $a0, 0($t0)		   # grab value at present node
-	addiu $v0, $zero, 1	   # prepare to print integer
+	beq $t0, $zero, printDone   # jump out once end of list found
+	lw $t1, 4($t0)              # grab next pointer and store in $t1
+	lw $a0, 0($t0)              # grab value at present node
+	addiu $v0, $zero, 1         # prepare to print integer
 	syscall
 	
-	la $a0, printComma	   # load comma and print string
+	la $a0, printComma          # load comma and print string
 	addiu $v0, $zero, 4
 	syscall
 	
-	addu $t0, $t1, $zero	   # move next pointer into $t0 for next loop
+	addu $t0, $t1, $zero        # move next pointer into $t0 for next loop
 	j printloop
 
 printDone:
-	la $a0, printNL		# load newling character and print
+	la $a0, printNL             # load newling character and print
 	addiu $v0, $zero, 4
 	syscall
 
@@ -200,12 +200,33 @@ printDone:
 #################
 
 importList:
-	
+    
+    addi $sp, $sp, -4
+    sw $ra, 4($sp)
+    
+    li $t0, 0                   #set i = 0
+    bne $t0, $a1, whileImport   #while i<size
+    
+    addi $sp, $sp, -8
+    sw $a0, 8($sp)
+    sw $a1, 4($sp)
+    lw $a0, 0(a0)
+    
+    addi $sp, $sp, -4           #push temp
+    sw $t0, 4($sp)
+    jr push
+    lw $t0, 4($sp)              #pop temp
+    addi $sp, $sp, 4
+
+
 	# $a0 holds array address
 	# $a1 holds array length
 	# $v0 returns header to linked list
 	
-	# return to caller
+	
+    # return to caller
+    lw $ra, 4($sp)
+    addi $sp, $sp, 4
 	jr $ra
 
 	
