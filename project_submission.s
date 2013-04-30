@@ -102,12 +102,13 @@ root:
 #################
 
 push:
-
 	# Pushes a new node on to the top of the linked list
 	# use sbrk to find the next free part of heap 
 	# $a0 holds the value to store
 	# $a1 holds the head of the linked list
 	# $v0 holds the new head of the linked list
+
+    
 
 	
 
@@ -200,32 +201,39 @@ printDone:
 #################
 
 importList:
-    
-    addi $sp, $sp, -4
+    # $a0 holds array address
+    # $a1 holds array length
+    # $v0 returns header to linked list
+
+    addi $sp, $sp, -4           #push ra
     sw $ra, 4($sp)
     
     li $t0, 0                   #set i = 0
+    lw $v0, $zero               #set v0 = null
     bne $t0, $a1, whileImport   #while i<size
-    
-    addi $sp, $sp, -8
-    sw $a0, 8($sp)
-    sw $a1, 4($sp)
-    lw $a0, 0(a0)
-    
-    addi $sp, $sp, -4           #push temp
+    j whileImportEnd
+
+whileImport:
+    addi $sp, $sp, -12          #push this->arg, temp
+    sw $a0, 12($sp)
+    sw $a1, 8($sp)
     sw $t0, 4($sp)
-    jr push
-    lw $t0, 4($sp)              #pop temp
-    addi $sp, $sp, 4
 
+    lw $a0, 0(a0)               #load value from address a0 to a0
+    add $a1, $v0, $zero         #load head from v0 to a1
+    jr push                     #push(a0, a1)
+                                #return head address in v0
+    sw $a0, 12($sp)             #pop this->arg, temp
+    sw $a1, 8($sp)
+    sw $t0, 4($sp)
+    addi $sp, $sp, 12
 
-	# $a0 holds array address
-	# $a1 holds array length
-	# $v0 returns header to linked list
-	
-	
+    addi $t0, 1                 #loop control
+    addi $a0, 4
+whileImportEnd:
+
     # return to caller
-    lw $ra, 4($sp)
+    lw $ra, 4($sp)              #pop ra
     addi $sp, $sp, 4
 	jr $ra
 
