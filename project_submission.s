@@ -91,9 +91,14 @@ root:
 	# use sbrk to find the next free part of heap 
 	# $v0 returns the new head of the linked list
 
-	
+    addi $sp, $sp, -4       #push ra
+    sw $ra, 4($sp)
+    
+    jal push                #push(a0) return v0
 
 	# return to caller
+    lw $ra, 4($sp)          #pop ra
+    addi $sp, $sp 4
 	jr 	$ra
 
 
@@ -107,10 +112,16 @@ push:
 	# $a0 holds the value to store
 	# $a1 holds the head of the linked list
 	# $v0 holds the new head of the linked list
-
     
+    move $t0, $a0       #save arguments to temp
+    move $t1, $a1
 
-	
+    li $v0, 9           #sbrk
+    li $a0, 8           #size = 4 bytes data + 4 bytes pointer address
+    syscall             #v0 <- new obj
+
+    sw $t0, 0($v0)      #assign value
+    sw $t1, 4($v0)      #assign pointer	
 
 	# return to caller
 	jr 	$ra
@@ -205,35 +216,46 @@ importList:
     # $a1 holds array length
     # $v0 returns header to linked list
 
-    addi $sp, $sp, -4           #push ra
+    addi $sp, $sp, -4               #push ra
     sw $ra, 4($sp)
     
-    li $t0, 0                   #set i = 0
-    lw $v0, $zero               #set v0 = null
-    bne $t0, $a1, whileImport   #while i<size
-    j whileImportEnd
+    #push root to list
+    addi $sp, $sp, -4               #save a0
+    sw $a0, 4($sp)
+    lw $a0, 0($a0)                  #load value from a0 -> a0
+    jal root
+    lw $a0, 4($sp)                  #restore a0
+    addi $sp, $sp, 4
 
-whileImport:
-    addi $sp, $sp, -12          #push this->arg, temp
+    addi $a0, $a0, 4                #increament to next element
+
+
+    #loop from 2nd to last element
+    li $t0, 0                       #set i = 0
+    beq $t0, a1 whileImportEnd
+
+whileImport:                        #while i<size
+    addi $sp, $sp, -12              #push this->arg, temp
     sw $a0, 12($sp)
     sw $a1, 8($sp)
     sw $t0, 4($sp)
 
-    lw $a0, 0(a0)               #load value from address a0 to a0
-    add $a1, $v0, $zero         #load head from v0 to a1
-    jr push                     #push(a0, a1)
-                                #return head address in v0
-    sw $a0, 12($sp)             #pop this->arg, temp
+    lw $a0, 0(a0)                   #load value from address a0 to a0
+    add $a1, $v0, $zero             #load head from v0 to a1
+    jr push                         #push(a0, a1) return head address in v0
+
+    sw $a0, 12($sp)                 #pop this->arg, temp
     sw $a1, 8($sp)
     sw $t0, 4($sp)
     addi $sp, $sp, 12
 
-    addi $t0, 1                 #loop control
+    addi $t0, 1                     #loop control
     addi $a0, 4
+    bne $t0, a1, whileImport
 whileImportEnd:
 
     # return to caller
-    lw $ra, 4($sp)              #pop ra
+    lw $ra, 4($sp)                  #pop ra
     addi $sp, $sp, 4
 	jr $ra
 
