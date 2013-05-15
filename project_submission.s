@@ -98,7 +98,7 @@ root:
     syscall             #v0 <- new obj
 
     sw $t0, 0($v0)      #assign value
-    sw $zero, 4($v0)      #assign pointer	
+    sw $zero, 4($v0)    #assign pointer	
 
 	# return to caller
     jr 	$ra
@@ -116,14 +116,13 @@ push:
 	# $v0 holds the new head of the linked list
     
     move $t0, $a0       #save arguments to temp
-    move $t1, $a1
 
     li $v0, 9           #sbrk
     li $a0, 8           #size = 4 bytes data + 4 bytes pointer address
     syscall             #v0 <- new obj
 
     sw $t0, 0($v0)      #assign value
-    sw $t1, 4($v0)      #assign pointer	
+    sw $a1, 4($v0)      #assign pointer	
 
 	# return to caller
 	jr 	$ra
@@ -141,8 +140,21 @@ mergeSort:
 	# $a0 holds the address of the top of the linked list
 	# $v0 holds the header of the sorted merge
 
+    addi $sp, $sp, -12          #push ra
+    sw $ra, 4($sp)
+
+    lw $t0, 4($a0)              #t0 = this->next
+    bnez t0, recursive          #if(list.size()==1)
+    move $v0, $a0               #set this -> head
+    j recursiveEnd              #return head
+    
+recursive:
+    
+    jal splitHalf
     
 
+
+recursiveEnd:
 	# return to caller
 	jr 	$ra
 
@@ -219,47 +231,43 @@ importList:
     # $a1 holds array length
     # $v0 returns header to linked list
 
-    addi $sp, $sp, -4               #push ra
-    sw $ra, 4($sp)
+    addi $sp, $sp, -20              #expand stack by 20
+    sw $ra, 4($sp)                  #push ra
     
-    #push root to list
-    addi $sp, $sp, -4               #save a0
-    sw $a0, 4($sp)
-    lw $a0, 0($a0)                  #load value from a0 -> a0
-    jal root
-    lw $a0, 4($sp)                  #restore a0
-    addiu $sp, $sp, 4
+    #push first by root funciton
+    sw $a0, 8($sp)                  #push a0
+    lw $a0, 0($a0)                  #load value from address a0 -> a0
+    jal root                        #return head address in v0
 
-    addiu $a0, $a0, 4                #increament to next element
+    lw $a0, 8($sp)                  #pop a0
+    addiu $a0, $a0, 4               #increament to next element
 
-
-    #loop from 2nd to last element
+    #loop push from 2nd to last element
     li $t0, 0                       #set i = 0
-    beq $t0, a1 whileImportEnd
 
-whileImport:                        #while i<size
-    addi $sp, $sp, -12              #push this->arg, temp
-    sw $a0, 12($sp)
-    sw $a1, 8($sp)
-    sw $t0, 4($sp)
+    beq $t0, $a1 whileImportEnd     #while(i < size)
 
-    lw $a0, 0(a0)                   #load value from address a0 to a0
-    addu $a1, $v0, $zero             #load head from v0 to a1
-    jr push                         #push(a0, a1) return head address in v0
+whileImport:                        
+    sw $a0, 8($sp)                  #push a0
+    sw $a1, 12($sp)                 #push a1
+    sw $t0, 16($sp)                 #push t0
 
-    sw $a0, 12($sp)                 #pop this->arg, temp
-    sw $a1, 8($sp)
-    sw $t0, 4($sp)
-    addiu $sp, $sp, 12
+    lw $a0, 0(a0)                   #load value from address a0 -> a0
+    move $a1, $v0                   #load head from v0 to a1
+    jal push                        #push(a0, a1) return head address in v0
 
-    addiu $t0, 1                     #loop control
-    addiu $a0, 4
-    bne $t0, a1, whileImport
+    sw $a0, 8($sp)                  #pop a0
+    sw $a1, 12($sp)                 #pop a1
+    sw $t0, 16($sp)                 #pop t0
+
+    addiu $t0, 1                    #i++
+    addiu $a0, 4                    #element address++
+    bne $t0, a1, whileImport        #while(i < size)
 whileImportEnd:
 
     # return to caller
     lw $ra, 4($sp)                  #pop ra
-    addiu $sp, $sp, 4
+    addiu $sp, $sp, 20              #shrink stack
 	jr $ra
 
 	
