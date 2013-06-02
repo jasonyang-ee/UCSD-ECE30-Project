@@ -140,22 +140,37 @@ mergeSort:
 	# $a0 holds the address of the top of the linked list
 	# $v0 holds the header of the sorted merge
 
-    addi $sp, $sp, -12          #push ra
-    sw $ra, 4($sp)
+    addi $sp, $sp, -20          #expand sp by 20
+    sw $ra, 4($sp)              #push ra
+    sw $t0, 8($sp)              #push t0
+    sw $t1, 12($sp)             #push t1
 
     lw $t0, 4($a0)              #t0 = this->next
-    bnez t0, recursive          #if(list.size()==1)
-    move $v0, $a0               #set this -> head
-    j recursiveEnd              #return head
-    
+    bnez t0, recursive          #if(list.size() == 1) return address; else recursive call mergeSort
+    move $v0, $a0               #return head address in v0
+    j recursiveEnd              #exit recursive
+
 recursive:
-    
-    jal splitHalf
-    
+    jal splitHalf               #splitHalf(a0) return two list head in v0, v1
 
+    move $a0, $v0               #prepare left half head address to a0
+    jal mergeSort               #mergeSort(a0) return sorted address in v0
+    move $t0, $v0               #save v0 -> t0
 
+    move $a0, $v1               #prepare right half head address to a1
+    jal mergeSort               #mergeSort(a0) return sorted address in v0
+    move $t1, $v0               #save v0 -> t1
+
+    move $a0, $t0               #prepare a0 from t0
+    move $a1, $t1               #prepare a1 from t1
+    jal mergeUp                 #mergeUp(a0, a1) return sorted address in v0
 recursiveEnd:
+
 	# return to caller
+    lw $ra, 4($sp)              #pop ra
+    lw $t0, 8($sp)              #pop t0
+    lw $t1, 12($sp)             #pop t1
+    addiu $sp, $sp, 20          #shrink sp by 20
 	jr 	$ra
 
 ###################
@@ -164,11 +179,63 @@ recursiveEnd:
 
 mergeUp:
 	# Merges the two sublists into a single sorted list
-	# $a0 contains head address of rst sub-list (A)
+	# $a0 contains head address of first sub-list (A)
 	# $a1 contains head address of second sub-list (B)
 	# $v0 returns the head address of the combined list
 
+    addi $sp, $sp, -20          #expand sp by 20
+    sw $ra, 4($sp)              #push ra
+    sw $t0, 8($sp)              #push t0
+    sw $t1, 12($sp)             #push t1
+    sw $t2, 16($sp)             #push t2
+
+    #if(Left==NULL) return Right
+    bnez $a0, LNotNull          #branch not equal to zero
+    move $v0, $a1               #return head in v0
+    j endMergeUp
+LNotNull:                       #endIF
+
+    #if(Right==NULL) return Left
+    bnez $a1, RNotNull          #branch not equal to zero
+    move $v0, $a0               #return head in v0
+    j endMergeUp
+RNotNull:                       #endIF
+
+    #if(Left->data <= Right->data)
+    lw $t0, 0($a0)              #load data from Left
+    lw $t1, 0($a1)              #load data from Right
+    bgt $t0, $t1, LGeartR       #branch greater than
+    move $t2, $a0               #save head
+
+    sw $a0 20($sp)              #push a0
+    addiu $a0, 4                #prepare Left->next
+    jal mergeUp                 #recursive mergeUp(L->next, R)
+    lw $a0 20($sp)              #pop a0
+    sw $v0, 4($t2)              #head->next = mergeUp(L->next, R)
+LGeartR:
+
+    #if(Left->data > Right->data)
+    lw $t0, 0($a0)              #load data from Left
+    lw $t1, 0($a1)              #load data from Right
+    ble $t0, $t1, RGeartL       #branch less equal than
+    move $t2, $a1               #save head
+
+    sw $a0 20($sp)              #push a0
+    addiu $a1, 4                #prepare Right->next
+    jal mergeUp                 #recursive mergeUp(L->next, R)
+    lw $a0 20($sp)              #pop a0
+    sw $v0, 4($t2)              #head->next = mergeUp(L->next, R)
+RGeartL:
+
+    move $v0, $t2               #return head in v0
+
+endMergeUp:
 	# return to caller
+    lw $ra, 4($sp)              #pop ra
+    lw $t0, 8($sp)              #pop t0
+    lw $t1, 12($sp)             #pop t1
+    lw $t2, 16($sp)             #pop t2
+    addiu $sp, $sp, 20          #shrink sp by 20
 	jr 	$ra
 
 #############
@@ -181,8 +248,53 @@ splitHalf:
 	# advancing through the linked list at two different
 	# speeds (fast and slow).
 	# $a0 contains head address linked list
-	# $v0 returns the head address of rst sub-list
+	# $v0 returns the head address of first sub-list
 	# $v1 returns the head address of second sub-list
+
+    addi $sp, $sp, -20          #expand sp by 20
+    sw $ra, 4($sp)              #push ra
+    sw $t0, 8($sp)              #push t0
+    sw $t1, 12($sp)             #push t1
+    sw $t2, 12($sp)             #push t2
+
+    #if(head = NULL || head->next = NULL) return (head, NULL)
+    seq $t0, $a0, $zero         #if(head!=NULL) t0=true
+    lw $t1, 4($t0)              #get head->next
+    seq $t0, $t1, $zero         #if(head->next!=NULL) t0=true
+    beq $t0, $zero, headNotNULL #branch on (t0==true) (head || head->next == NULL)
+    move $v0, $a0               #return head in v0
+    move $v1, $zero             #return NULL in v1
+    j endSplitHalf
+headNotNULL:                    #endIF
+
+    # t0 for slow iterator, t1 for fast iterator
+
+    #else if(head != NULL && head!next != NULL)
+    move $t0, $a0               #copy head to slow iterator
+    lw $t1, 4($a0)              #copy head->next to fast iterator
+
+    #while(fast!=NULL)
+    beq $t1, $zero, endIteratorWhile#if(fast!=NULL) start loop
+iteratorWhile:
+    lw $t1, 4($t1)              #fast = fast->next
+
+    #if(fast!=NULL)
+    beqz $t1, fastNotNULL
+    lw $t1, 4($t1)              #fast = fast->next
+    lw $t0, 4($t0)              #slow = slow->next
+fastNotNULL:                    #endIF
+
+    bne $t1, $zero, iteratorWhile   #if(fast==NULL) repeat loop
+endIteratorWhile:
+
+    lw $t2, 4($t0)              #get slow->next
+    sw $zero, 4($t0)            #assign NULL to slow->next
+
+endSplitHalf:
+    move $v1, $a0               #return head to v0
+    move $v0, $t2               #return slow->next to v0
+               
+
 
 	# return to caller
 	jr $ra
