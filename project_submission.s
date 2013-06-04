@@ -147,13 +147,12 @@ mergeSort:
     sw $s0, 8($sp)              #push s0
     sw $s0, 12($sp)             #push s1
 
-    seq $t0, $a0, $zero         #if(head==NULL) t0=1
-    beqz $t0, recursive         #if(head==NULL) return head address
+    bnez $a0, recursive         #if(head==NULL) return head address
+    move $v0, $a0               #return head address in v0
+    j recursiveEnd              #exit recursive
     
     lw $s0, 4($a0)              #load head->next to s0
-    seq $t0, $s0, $zero         #if(head->next==NULL) t0=1
-    beqz $t0, recursive         #if(head->next==NULL) return head address
-
+    bnez $t0, recursive         #if(head->next==NULL) return head address
     move $v0, $a0               #return head address in v0
     j recursiveEnd              #exit recursive
 
@@ -263,14 +262,15 @@ splitHalf:
     # t0 for NULL bool value
     # s0 for head->next
 
-    seq $t0, $a0, $zero         #if(head==NULL) t0=1
-    beqz $t0, moreThanOne       #if(head==NULL) return head address
+    bnez $t0, moreThanOne       #if(head==NULL) return head address
+    move $v0, $a0               #return head address in v0
+    move $v1, $zero             #return NULL in v1
+    j endSplitHalf              #exit splitHalf
 
     lw $s0, 4($a0)              #load head->next to s0
-    seq $t0, $s0, $zero         #if(head->next==NULL) t0=1
-    beqz $t0, moreThanOne       #if(head->next==NULL) return head address
-
+    bnez $t0, moreThanOne       #if(head->next==NULL) return head address
     move $v0, $a0               #return head address in v0
+    move $v1, $zero             #return NULL in v1
     j endSplitHalf              #exit splitHalf
 
 moreThanOne:
@@ -295,10 +295,10 @@ endIteratorWhile:
     lw $s0, 4($s1)              #get slow->next for return
     sw $zero, 4($s1)            #assign NULL to slow->next
 
-endSplitHalf:
     move $v1, $a0               #return head (Left) to v0
     move $v0, $s0               #return slow->next (Right) to v1
 
+endSplitHalf:
 	# return to caller
     lw $ra, 4($sp)              #pop ra
     lw $s0, 8($sp)              #pop s0
