@@ -146,7 +146,7 @@ mergeSort:
     sw $t1, 12($sp)             #push t1
 
     lw $t0, 4($a0)              #t0 = this->next
-    bnez t0, recursive          #if(list.size() == 1) return address; else recursive call mergeSort
+    bnez $t0, recursive         #if(list.size() == 1) return address; else recursive call mergeSort
     move $v0, $a0               #return head address in v0
     j recursiveEnd              #exit recursive
 
@@ -257,6 +257,8 @@ splitHalf:
     sw $t1, 12($sp)             #push t1
     sw $t2, 12($sp)             #push t2
 
+    ### t0 for NULL bool value, t1 for head->next ###
+
     #if(head = NULL || head->next = NULL) return (head, NULL)
     seq $t0, $a0, $zero         #if(head!=NULL) t0=true
     lw $t1, 4($t0)              #get head->next
@@ -267,36 +269,40 @@ splitHalf:
     j endSplitHalf
 headNotNULL:                    #endIF
 
-    # t0 for slow iterator, t1 for fast iterator
+    ### t0 for slow iterator, t1 for fast iterator ###
 
     #else if(head != NULL && head!next != NULL)
     move $t0, $a0               #copy head to slow iterator
     lw $t1, 4($a0)              #copy head->next to fast iterator
 
+    bnez $t1, iteratorWhile     #if(fast!=NULL) start loop
+    j endIteratorWhile          #else don't enter loop
+
     #while(fast!=NULL)
-    beq $t1, $zero, endIteratorWhile#if(fast!=NULL) start loop
 iteratorWhile:
     lw $t1, 4($t1)              #fast = fast->next
 
-    #if(fast!=NULL)
-    beqz $t1, fastNotNULL
-    lw $t1, 4($t1)              #fast = fast->next
-    lw $t0, 4($t0)              #slow = slow->next
+    beqz $t1, fastNotNULL       #if(fast!=NULL)
+    lw $t1, 4($t1)                #fast = fast->next
+    lw $t0, 4($t0)                #slow = slow->next
 fastNotNULL:                    #endIF
 
-    bne $t1, $zero, iteratorWhile   #if(fast==NULL) repeat loop
+    bnez $t1, iteratorWhile     #if(fast==NULL) repeat loop
 endIteratorWhile:
 
-    lw $t2, 4($t0)              #get slow->next
+    lw $t2, 4($t0)              #get slow->next for return
     sw $zero, 4($t0)            #assign NULL to slow->next
 
 endSplitHalf:
     move $v1, $a0               #return head to v0
     move $v0, $t2               #return slow->next to v0
-               
-
 
 	# return to caller
+    lw $ra, 4($sp)              #pop ra
+    lw $t0, 8($sp)              #pop t0
+    lw $t1, 12($sp)             #pop t1
+    lw $t2, 12($sp)             #pop t2
+    addiu $sp, $sp, 20          #shrink sp by 20
 	jr $ra
 
 ################
@@ -364,7 +370,7 @@ whileImport:
     sw $a1, 12($sp)                 #push a1
     sw $t0, 16($sp)                 #push t0
 
-    lw $a0, 0(a0)                   #load value from address a0 -> a0
+    lw $a0, 0($a0)                  #load value from address a0 -> a0
     move $a1, $v0                   #load head from v0 to a1
     jal push                        #push(a0, a1) return head address in v0
 
@@ -374,7 +380,7 @@ whileImport:
 
     addiu $t0, 1                    #i++
     addiu $a0, 4                    #element address++
-    bne $t0, a1, whileImport        #while(i < size)
+    bne $t0, $a1, whileImport       #while(i < size)
 whileImportEnd:
 
     # return to caller
