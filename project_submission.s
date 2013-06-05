@@ -145,25 +145,30 @@ mergeSort:
     addi $sp, $sp, -20          #expand sp by 20
     sw $ra, 4($sp)              #push ra
     sw $s0, 8($sp)              #push s0
-    sw $s0, 12($sp)             #push s1
+    sw $s1, 12($sp)             #push s1
+    sw $s2, 16($sp)             #push s2
+    sw $s3, 20($sp)             #push s3
 
-    bnez $a0, recursive         #if(head==NULL) return head address
+    bnez $a0, headNULL1         #if(head==NULL) return head address
     move $v0, $a0               #return head address in v0
     j recursiveEnd              #exit recursive
-    
+
+headNULL1:
     lw $s0, 4($a0)              #load head->next to s0
-    bnez $t0, recursive         #if(head->next==NULL) return head address
+    bnez $s0, recursive         #if(head->next==NULL) return head address
     move $v0, $a0               #return head address in v0
     j recursiveEnd              #exit recursive
 
 recursive:
     jal splitHalf               #splitHalf(a0) return two list head in v0, v1
-    move $a0, $v0               #prepare left half head address to a0
-    move $a0, $v1               #prepare right half head address to a1
+    move $s2, $v0               #save v0 -> s2
+    move $s3, $v1               #save v1 -> s3
 
+    move $a0, $s2               #prepare left half head address to a0
     jal mergeSort               #mergeSort(a0) return sorted address in v0
     move $s0, $v0               #save v0 -> s0
 
+    move $a0, $s3               #prepare right half head address to a0
     jal mergeSort               #mergeSort(a0) return sorted address in v0
     move $s1, $v0               #save v0 -> s1
 
@@ -208,28 +213,24 @@ RNotNull:                       #endIF
     #if(Left->data <= Right->data)
     lw $t0, 0($a0)              #load data from Left
     lw $t1, 0($a1)              #load data from Right
-    bgt $t0, $t1, LGeartR       #branch greater than
-    move $s0, $a0               #save head
-
-    sw $a0 12($sp)              #push a0
-    addiu $a0, 4                #prepare Left->next
-    jal mergeUp                 #recursive mergeUp(Left->next, Right)
-    lw $a0 12($sp)              #pop a0
-    sw $v0, 4($s0)              #head->next = mergeUp(Left->next, Right)
-LGeartR:
-
-    #if(Left->data > Right->data)
-    lw $t0, 0($a0)              #load data from Left
-    lw $t1, 0($a1)              #load data from Right
-    ble $t0, $t1, RGeartL       #branch less equal than
+    
+    bgt $t0, $t1, RGreatL       #branch greater than
     move $s0, $a1               #save head
 
-    sw $a0 12($sp)              #push a0
-    addiu $a1, 4                #prepare Right->next
-    jal mergeUp                 #recursive mergeUp(L->next, R)
-    lw $a0 12($sp)              #pop a0
-    sw $v0, 4($s0)              #head->next = mergeUp(L->next, R)
-RGeartL:
+    sw $a1, 12($sp)             #push a1
+    lw $a1, 4($a1)              #prepare Right->next
+    jal mergeUp                 #recursive mergeUp(Left, Right->next)
+    lw $a1, 12($sp)             #pop a1
+    sw $v0, 4($s0)              #head->next = mergeUp(Left, Right->next)
+
+RGreatL:
+    move $s0, $a0               #save head
+
+    sw $a0, 12($sp)             #push a0
+    lw $a0, 4($a0)              #prepare Left->next
+    jal mergeUp                 #recursive mergeUp(Left->next, Right)
+    lw $a0, 12($sp)             #pop a0
+    sw $v0, 4($s0)              #head->next = mergeUp(Left->next, Right)
 
     move $v0, $s0               #return head in v0
 
@@ -262,13 +263,14 @@ splitHalf:
     # t0 for NULL bool value
     # s0 for head->next
 
-    bnez $t0, moreThanOne       #if(head==NULL) return head address
+    bnez $a0, headNULL2         #if(head==NULL) return head address
     move $v0, $a0               #return head address in v0
     move $v1, $zero             #return NULL in v1
     j endSplitHalf              #exit splitHalf
 
+headNULL2:
     lw $s0, 4($a0)              #load head->next to s0
-    bnez $t0, moreThanOne       #if(head->next==NULL) return head address
+    bnez $s0, moreThanOne       #if(head->next==NULL) return head address
     move $v0, $a0               #return head address in v0
     move $v1, $zero             #return NULL in v1
     j endSplitHalf              #exit splitHalf
@@ -284,19 +286,19 @@ moreThanOne:
 iteratorWhile:
     lw $s2, 4($s2)              #fast = fast->next
 
-    beqz $t1, fastNotNULL       #if(fast!=NULL)
+    beqz $s2, fastNotNULL       #if(fast!=NULL)
     lw $s2, 4($s2)                #fast = fast->next
     lw $s1, 4($s1)                #slow = slow->next
 fastNotNULL:                    #endIF
 
-    bnez $t1, iteratorWhile     #if(fast==NULL) repeat loop
+    bnez $s2, iteratorWhile     #if(fast==NULL) repeat loop
 endIteratorWhile:
 
     lw $s0, 4($s1)              #get slow->next for return
     sw $zero, 4($s1)            #assign NULL to slow->next
 
-    move $v1, $a0               #return head (Left) to v0
-    move $v0, $s0               #return slow->next (Right) to v1
+    move $v0, $a0               #return head (Left) to v0
+    move $v1, $s0               #return slow->next (Right) to v1
 
 endSplitHalf:
 	# return to caller
