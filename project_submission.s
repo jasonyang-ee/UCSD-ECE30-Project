@@ -142,7 +142,7 @@ mergeSort:
 	# $a0 holds the address of the top of the linked list
 	# $v0 holds the header of the sorted merge
 
-    addi $sp, $sp, -30          #expand sp by 20
+    addi $sp, $sp, -20          #expand sp by 20
     sw $ra, 4($sp)              #push ra
     sw $s0, 8($sp)              #push s0
     sw $s1, 12($sp)             #push s1
@@ -183,7 +183,7 @@ recursiveEnd:
     lw $s1, 12($sp)             #pop s1
     lw $s2, 16($sp)             #pop s2
     lw $s3, 20($sp)             #pop s3
-    addiu $sp, $sp, 30          #shrink sp by 20
+    addiu $sp, $sp, 20          #shrink sp by 20
 	jr 	$ra
 
 ###################
@@ -199,6 +199,8 @@ mergeUp:
     addi $sp, $sp, -20          #expand sp by 20
     sw $ra, 4($sp)              #push ra
     sw $s0, 8($sp)              #push s0
+    sw $s1, 12($sp)              #push s1
+    sw $s2, 16($sp)              #push s2
 
     #if(Left==NULL) return Right
     bnez $a0, LNotNull          #branch not equal to zero
@@ -212,34 +214,37 @@ LNotNull:                       #endIF
     j endMergeUp
 RNotNull:                       #endIF
 
+    move $a0, $s0
+    move $a1, $s1
+
     #if(Left->data <= Right->data)
-    lw $t0, 0($a0)              #load data from Left
-    lw $t1, 0($a1)              #load data from Right
+    lw $t0, 0($s0)              #load data from Left
+    lw $t1, 0($s1)              #load data from Right
     
-    bgt $t0, $t1, RGreatL       #branch greater than
-    move $s0, $a1               #save head
+    bgt $t0, $t1, leftGreater   #branch on left greater
+    move $s2, $s1               #save head
 
-    sw $a0, 12($sp)             #push a1
-    lw $a0, 4($a1)              #prepare Right->next
+    move $a0, $s0               #prepare Left
+    lw $a1, 4($s1)              #prepare Right->next
     jal mergeUp                 #recursive mergeUp(Left, Right->next)
-    lw $a0, 12($sp)             #pop a1
-    sw $v0, 4($s0)              #head->next = mergeUp(Left, Right->next)
+    sw $v0, 4($s2)              #head->next = mergeUp(Left, Right->next)
 
-RGreatL:
-    move $s0, $a0               #save head
+leftGreater:
+    move $s2, $s0               #save head
 
-    sw $a0, 12($sp)             #push a0
-    lw $a0, 4($a0)              #prepare Left->next
+    lw $a0, 4($s0)              #prepare Left->next
+    move $a1, $s1               #prepare Right
     jal mergeUp                 #recursive mergeUp(Left->next, Right)
-    lw $a0, 12($sp)             #pop a0
-    sw $v0, 4($s0)              #head->next = mergeUp(Left->next, Right)
+    sw $v0, 4($s2)              #head->next = mergeUp(Left->next, Right)
 
-    move $v0, $s0               #return head in v0
+    move $v0, $s2               #return head in v0
 
 endMergeUp:
 	# return to caller
     lw $ra, 4($sp)              #pop ra
     lw $s0, 8($sp)              #pop s0
+    lw $s1, 12($sp)              #pop s1
+    lw $s2, 16($sp)              #pop s2
     addiu $sp, $sp, 20          #shrink sp by 20
 	jr 	$ra
 
