@@ -142,7 +142,7 @@ mergeSort:
 	# $a0 holds the address of the top of the linked list
 	# $v0 holds the header of the sorted merge
 
-    addi $sp, $sp, -20          #expand sp by 20
+    addi $sp, $sp, -30          #expand sp by 20
     sw $ra, 4($sp)              #push ra
     sw $s0, 8($sp)              #push s0
     sw $s1, 12($sp)             #push s1
@@ -181,7 +181,9 @@ recursiveEnd:
     lw $ra, 4($sp)              #pop ra
     lw $s0, 8($sp)              #pop s0
     lw $s1, 12($sp)             #pop s1
-    addiu $sp, $sp, 20          #shrink sp by 20
+    lw $s2, 16($sp)             #pop s2
+    lw $s3, 20($sp)             #pop s3
+    addiu $sp, $sp, 30          #shrink sp by 20
 	jr 	$ra
 
 ###################
@@ -217,10 +219,10 @@ RNotNull:                       #endIF
     bgt $t0, $t1, RGreatL       #branch greater than
     move $s0, $a1               #save head
 
-    sw $a1, 12($sp)             #push a1
-    lw $a1, 4($a1)              #prepare Right->next
+    sw $a0, 12($sp)             #push a1
+    lw $a0, 4($a1)              #prepare Right->next
     jal mergeUp                 #recursive mergeUp(Left, Right->next)
-    lw $a1, 12($sp)             #pop a1
+    lw $a0, 12($sp)             #pop a1
     sw $v0, 4($s0)              #head->next = mergeUp(Left, Right->next)
 
 RGreatL:
@@ -237,7 +239,7 @@ RGreatL:
 endMergeUp:
 	# return to caller
     lw $ra, 4($sp)              #pop ra
-    lw $s0, 8($sp)              #pop t0
+    lw $s0, 8($sp)              #pop s0
     addiu $sp, $sp, 20          #shrink sp by 20
 	jr 	$ra
 
