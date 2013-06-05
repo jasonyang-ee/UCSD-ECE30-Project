@@ -4,8 +4,8 @@
 #                    #
 ######################
 
-# Partner1: (your name here), (Student ID here)
-# Partner2: (your name here), (Student ID here)
+# Partner1: Chieh-Sheng Teng, A98419055
+# Partner2: Kai-Yun Tien, A11016074
 
 # Linked list structure
 # int data 4 bytes
@@ -44,7 +44,7 @@ main:
 	#addi $a1, $zero, 20    # load the first 20 elements for testing
 	
 	addi $sp, $sp, -4       # shift stack register and push 
-	sw $ra, 4($sp)          # $ra onto it
+	sw $ra, 0($sp)          # $ra onto it
 
 	jal importList          # import the list from the given array
 
@@ -74,7 +74,7 @@ main:
 
 	jal printList
 	
-	lw $ra, 4($sp)          # pop the stack to restore $ra 
+	lw $ra, 0($sp)          # pop the stack to restore $ra 
 	addi $sp, $sp, 4        # increment stack pointer to release memory for reuse
 	
 	# return to caller
@@ -140,7 +140,7 @@ mergeSort:
 	# $a0 holds the address of the top of the linked list
 	# $v0 holds the header of the sorted merge
 
-    addi $sp, $sp, -20          #expand sp by 20
+    addi $sp, $sp, -24          #expand sp by 24
     sw $ra, 4($sp)              #push ra
     sw $s0, 8($sp)              #push s0
     sw $s1, 12($sp)             #push s1
@@ -181,7 +181,7 @@ recursiveEnd:
     lw $s1, 12($sp)             #pop s1
     lw $s2, 16($sp)             #pop s2
     lw $s3, 20($sp)             #pop s3
-    addiu $sp, $sp, 20          #shrink sp by 20
+    addiu $sp, $sp, 24          #shrink sp by 24
 	jr 	$ra
 
 ###################
@@ -219,7 +219,7 @@ RNotNull:                       #endIF
     lw $t0, 0($s0)              #load data from Left
     lw $t1, 0($s1)              #load data from Right
     
-    bgt $t0, $t1, leftGreater   #branch on left greater
+    blt $t0, $t1, rightGreater   #branch on right greater
     move $s2, $s1               #save head
 
     move $a0, $s0               #prepare Left
@@ -228,7 +228,7 @@ RNotNull:                       #endIF
     sw $v0, 4($s2)              #head->next = mergeUp(Left, Right->next)
     j endCompare
 
-leftGreater:
+rightGreater:
     move $s2, $s0               #save head
 
     lw $a0, 4($s0)              #prepare Left->next
